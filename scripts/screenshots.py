@@ -1,4 +1,4 @@
-# Screenshots use the live data file.
+# Screenshots use the live data file (v0.1.0).
 """Serve the repo locally and take desktop and mobile screenshots with live data (run in GitHub Actions)."""
 import asyncio, os, subprocess, sys, time
 from PIL import Image
