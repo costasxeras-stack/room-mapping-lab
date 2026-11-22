@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Room Mapping Lab · how much to automate, and what it is worth</title>
+<meta name="description" content="Supplier room names against master rooms from the LiteAPI sandbox: three matching methods tested against LiteAPI's own mapping, a confidence threshold, and the business trade-off between automation, errors and review cost.">
+<meta name="theme-color" content="#4527a0">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%234527a0'/%3E%3Crect x='6' y='8' width='8' height='5' rx='1.5' fill='white'/%3E%3Crect x='6' y='19' width='8' height='5' rx='1.5' fill='white'/%3E%3Crect x='19' y='13.5' width='8' height='5' rx='1.5' fill='%23ffca28'/%3E%3Cpath d='M14 10.5l5 5M14 21.5l5-5' stroke='white' stroke-width='1.6'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,600;7..72,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="app.css?v=1">
+<style>
+:root{--accent:#4527a0;--soft:#ede7f6}
+.intro .kicker{font:600 12.5px var(--body);letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+.lay{display:grid;grid-template-columns:330px minmax(0,1fr);gap:18px;align-items:start}
+.lay>*{min-width:0}.lay>.card{margin-top:0}
+.side label{display:flex;justify-content:space-between;gap:8px}
+.side label output{color:var(--accent);font-weight:700}
+input[type=range]{width:100%;accent-color:var(--accent)}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+.ok{color:#2e7d32;font-weight:600}.bad{color:#c62828;font-weight:600}.mid{color:#ef6c00;font-weight:600}
+.pill2{display:inline-block;font:600 11.5px var(--body);border-radius:999px;padding:2px 8px}
+.pill2.live{background:#e8f5e9;color:#1b5e20}.pill2.sample{background:#fff8e1;color:#8d6e00}
+.group{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-top:8px}
+.group b{font-size:14px}
+.group .names{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
+.group .names span{font-size:12.5px;background:#f3f1ec;border-radius:6px;padding:2px 7px}
+.group .names span.un{background:#ffebee;color:#b71c1c}
+svg text{font:11.5px var(--body);fill:var(--muted)}
+.verdict{border-radius:14px;padding:14px 16px;margin-top:12px;font-size:15px;border-left:5px solid var(--accent);background:var(--soft)}
+.verdict b.t{display:block;font-size:16.5px;margin-bottom:4px}
+.mm{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.play h3{font:600 16px var(--body);margin-top:16px}
+.play ol,.play ul{padding-left:20px;display:grid;gap:6px;font-size:15px}
+.ex td{font-size:13.5px}
+@media (max-width:900px){.lay,.mm{grid-template-columns:minmax(0,1fr)}}
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <a class="brand" href="./"><i><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="2" y="3" width="4" height="3" rx="1" fill="white"/><rect x="2" y="10" width="4" height="3" rx="1" fill="white"/><rect x="10" y="6.5" width="4" height="3" rx="1" fill="#ffca28"/><path d="M6 4.5l4 3M6 11.5l4-3" stroke="white" stroke-width="1.2"/></svg></i>Room Mapping Lab</a>
+  <nav><a class="hide-sm" href="https://github.com/costasxeras-stack/room-mapping-lab">GitHub</a><a href="https://kostasxeras.com/">Portfolio</a></nav>
+</div></header>
+<div class="tabs" role="tablist" aria-label="Sections"><div class="wrap">
+  <button role="tab" data-view="mess" aria-selected="true">1 · The problem</button>
+  <button role="tab" data-view="match" aria-selected="false">2 · Three ways to match</button>
+  <button role="tab" data-view="decide" aria-selected="false">3 · The decision</button>
+  <button role="tab" data-view="play" aria-selected="false">4 · Running it as a product</button>
+</div></div>
+<main class="wrap">
+  <section class="intro">
+    <span class="kicker">Hotel content · room mapping · decision lab</span>
+    <h1>How much room mapping to automate, and what each choice is worth.</h1>
+    <p>Every supplier names the same room differently. Mapping them to one master room is what makes rates comparable, so travellers see one room with the best price instead of five confusing ones. This lab takes supplier room names and master rooms from the LiteAPI sandbox, tests three matching methods against LiteAPI's own mapping, and turns the confidence threshold into a business decision.</p>
+    <p id="src" style="margin-top:8px"></p>
+  </section>
+
+  <!-- 1 -->
+  <div data-panel="mess">
+    <section class="card">
+      <h2>What the data looks like</h2>
+      <div class="stats" id="mess-stats"></div>
+      <h3 style="font:600 15px var(--body);margin-top:16px">Coverage by city</h3>
+      <div style="overflow-x:auto"><table><thead><tr><th>City</th><th class="n">Hotels</th><th class="n">Rate names</th><th class="n">Mapped by LiteAPI</th><th class="n">Coverage</th><th class="n">Names per master room</th></tr></thead><tbody id="cities"></tbody></table></div>
+    </section>
+    <section class="card">
+      <h2>One hotel, up close</h2>
+      <div class="row" style="margin-top:0"><select id="hotel" style="max-width:420px" aria-label="Hotel"></select><button class="btn small" type="button" id="messiest">Show the messiest hotel</button></div>
+      <p class="sub" id="hotel-sub"></p>
+      <div id="groups"></div>
+    </section>
+  </div>
+
+  <!-- 2 -->
+  <div data-panel="match" hidden>
+    <section class="card">
+      <h2>Three matching methods, scored against LiteAPI's mapping</h2>
+      <p class="sub">Each method picks a master room for every supplier name and says how sure it is (0 to 1). The reference is the room LiteAPI mapped the rate to. It is LiteAPI's answer, not a hand-checked truth, so disagreement can mean either side is wrong.</p>
+      <div style="overflow-x:auto"><table><thead><tr><th>Method</th><th class="n">Agrees with LiteAPI</th><th class="n">At confidence ≥ 0.8: share auto-mapped</th><th class="n">and agreement</th><th>Cost and speed</th></tr></thead><tbody id="methods"></tbody></table></div>
+      <ul class="sub" style="padding-left:20px;display:grid;gap:4px;margin-top:10px">
+        <li><b>Rules:</b> pulls room class, bed type, view and extras out of the name (with abbreviations like DBL, TWN, DLX, JR) and scores each master room on agreement and conflicts.</li>
+        <li><b>Text similarity:</b> character trigram overlap between the supplier name and each master room name.</li>
+        <li><b>Hybrid:</b> high confidence when rules and similarity pick the same room, low when they disagree.</li>
+        <li><b>LLM judge:</b> not run here. It would only see the uncertain cases. Its accuracy, cost per 1,000 calls and latency are [to measure] with a real key.</li>
+      </ul>
+    </section>
+    <section class="card">
+      <h2>Where the methods disagree with LiteAPI</h2>
+      <p class="sub">The most useful rows for a mapping team: either the method is wrong, or the reference is. Method: <select id="ex-m" style="max-width:180px;display:inline-block"><option value="hyb">Hybrid</option><option value="rule">Rules</option><option value="sim">Similarity</option></select></p>
+      <div style="overflow-x:auto"><table class="ex"><thead><tr><th>Supplier name</th><th>LiteAPI mapped to</th><th>Method picked</th><th class="n">Confidence</th></tr></thead><tbody id="ex"></tbody></table></div>
+      <h3 style="font:600 15px var(--body);margin-top:16px">Rates LiteAPI left unmapped, and what the hybrid would suggest</h3>
+      <div style="overflow-x:auto"><table class="ex"><thead><tr><th>Supplier name</th><th>Hotel</th><th>Suggestion</th><th class="n">Confidence</th></tr></thead><tbody id="un"></tbody></table></div>
+    </section>
+  </div>
+
+  <!-- 3 -->
+  <div data-panel="decide" hidden>
+    <div class="lay">
+      <section class="card side">
+        <h2>The threshold</h2>
+        <label for="t">Auto-map when confidence ≥ <output id="o-t"></output></label><input type="range" id="t" min="0" max="1" step="0.05" value="0.8">
+        <label for="dm">Method</label><select id="dm"><option value="hyb">Hybrid</option><option value="rule">Rules</option><option value="sim">Similarity</option></select>
+        <h2 style="margin-top:16px">Business inputs</h2>
+        <p class="note" style="margin-top:0">Example values to show the shape of the trade-off. Replace with real numbers.</p>
+        <label for="vol">New rate names to map a month</label><input type="number" id="vol" value="200000" step="10000" min="0">
+        <label for="cap">Review capacity a month (names)</label><input type="number" id="cap" value="30000" step="1000" min="0">
+        <label for="rc">Cost to review one name (€)</label><input type="number" id="rc" value="0.25" step="0.05" min="0">
+        <label for="bk">Share of mapped names that get booked</label><input type="number" id="bk" value="1" step="0.1" min="0"><span class="note">%</span>
+        <label for="wc">Cost when a wrong room is booked (€)</label><input type="number" id="wc" value="150" step="10" min="0">
+        <label for="vv">Value of one correctly mapped name a month (€)</label><input type="number" id="vv" value="0.40" step="0.05" min="0">
+      </section>
+      <div>
+        <section class="card" style="margin-top:0">
+          <div class="stats"><div class="stat"><b id="d-auto">–</b><span>auto-mapped</span></div><div class="stat"><b id="d-agree">–</b><span>agreement on auto-mapped</span></div><div class="stat"><b id="d-queue">–</b><span>to review a month</span></div><div class="stat"><b id="d-net">–</b><span>net value a month</span></div></div>
+          <div class="verdict" id="d-verdict"></div>
+          <svg id="d-chart" viewBox="0 0 700 280" role="img" aria-label="Net value by threshold" style="width:100%;height:auto;margin-top:12px"></svg>
+          <p class="note">Net value = value of correct mappings − expected cost of wrong rooms booked − review cost. Names above review capacity stay unmapped and earn nothing. Agreement with LiteAPI stands in for accuracy.</p>
+        </section>
+        <section class="card">
+          <h2>What moves the answer</h2>
+          <div class="mm"><div id="sens"></div><div class="sub" id="sens-note"></div></div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4 -->
+  <div data-panel="play" hidden>
+    <section class="card play">
+      <h2>How I would run mapping as a product</h2>
+      <h3>The outcome</h3>
+      <p>Every bookable rate shows up as the right room, so travellers compare like with like and partners trust the content. Mapping is not the goal. Comparable, bookable rates are.</p>
+      <h3>Metrics</h3>
+      <ul>
+        <li><b>North star:</b> share of bookable rates mapped correctly, weighted by booking volume. A mapped rate nobody books matters less than one on page one.</li>
+        <li><b>Coverage:</b> share of rate names mapped, by city and supplier.</li>
+        <li><b>Precision:</b> share of mappings that are right, from a weekly audit sample, not from agreement.</li>
+        <li><b>Time to map:</b> hours from a new hotel or supplier appearing to 95% coverage.</li>
+        <li><b>Guardrail:</b> wrong-room complaints and refunds per 10,000 bookings.</li>
+      </ul>
+      <h3>The first 90 days</h3>
+      <ol>
+        <li><b>Weeks 1 to 3: measure before building.</b> A weekly audit sample of [n] mappings to get real precision by method and supplier. Size the cost of a wrong room with support and finance.</li>
+        <li><b>Weeks 4 to 8: set thresholds by risk, not one number.</b> Stricter where rooms are expensive or easy to confuse (suites, views), looser for simple doubles and twins. Route only the uncertain middle to people or to an LLM judge.</li>
+        <li><b>Weeks 9 to 12: close the loop.</b> Every human correction becomes training data and a rule candidate. Report coverage, precision and time to map per supplier, so the worst suppliers get fixed at the source.</li>
+      </ol>
+      <h3>Trade-offs I would put to engineering</h3>
+      <ul>
+        <li><b>Rules versus models:</b> rules are cheap and explainable but plateau. Models need labelled data, which the review queue produces for free.</li>
+        <li><b>LLM judge:</b> only on the uncertain slice, with a cost cap per 1,000 calls and a latency budget, so it never sits on the booking path.</li>
+        <li><b>Batch versus real time:</b> map in batch when a supplier feed changes, and fall back to "unmapped but bookable" at search time instead of blocking.</li>
+      </ul>
+      <h3>The decision I would ask for</h3>
+      <p>Agree the cost of a wrong room and the value of a mapped rate with finance, then set the auto-map threshold per room risk class from that, and review it monthly against the audit sample.</p>
+    </section>
+  </div>
+
+  <section class="card">
+    <h2>About this lab</h2>
+    <ul class="sub" style="padding-left:20px;display:grid;gap:6px">
+      <li>Data comes from the LiteAPI sandbox through a GitHub job that uses a private key stored as a repository secret. The page never sees the key. Sandbox content and rates may differ from production.</li>
+      <li>The reference is LiteAPI's own mapping (<code>mappedRoomId</code> with room mapping on), not a hand-checked truth.</li>
+      <li>Business inputs are examples, not Nuitée figures. Nuitée is not involved in this project.</li>
+    </ul>
+  </section>
+</main>
+<footer><div class="wrap"><span>Room Mapping Lab v0.1.0 by <a href="https://kostasxeras.com/">Konstantinos Xeras</a>, built with Claude (Anthropic). <a href="https://github.com/costasxeras-stack/room-mapping-lab">Code and decisions on GitHub</a>.</span></div></footer>
+<script>
+(function () {
+  'use strict';
+  var $ = function (id) { return document.getElementById(id); };
+  var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+  var pct = function (x, d) { return (x * 100).toFixed(d == null ? 0 : d) + '%'; };
+  var eur = function (x) { return (x < 0 ? '−' : '') + '€' + Math.round(Math.abs(x)).toLocaleString('en-US'); };
+  document.querySelector('.tabs').addEventListener('click', function (e) { var b = e.target.closest('[data-view]'); if (!b) return; document.querySelectorAll('.tabs [data-view]').forEach(function (x) { x.setAttribute('aria-selected', x === b); }); document.querySelectorAll('[data-panel]').forEach(function (p) { p.hidden = p.getAttribute('data-panel') !== b.getAttribute('data-view'); }); if (b.getAttribute('data-view') === 'decide') decide(); window.scrollTo({ top: 0 }); });
+
+  // ---------- normalisation and attributes
+  var SYN = [[/\bdbl\b/g, 'double'], [/\btwn\b/g, 'twin'], [/\bsgl\b/g, 'single'], [/\btpl\b|\btrpl\b/g, 'triple'], [/\bstd\b/g, 'standard'], [/\bsup\b/g, 'superior'], [/\bdlx\b|\bdeluxe\b/g, 'deluxe'], [/\bjr\b|\bjun\b/g, 'junior'], [/\bste\b/g, 'suite'], [/\brm\b/g, 'room'], [/\bapt\b|\bapartment\b|\bappartement\b/g, 'apartment'], [/\bexec\b/g, 'executive'], [/\bquad\b|\bquadruple\b/g, 'quadruple'], [/\bkg\b/g, 'king'], [/\bqn\b/g, 'queen'], [/\bvw\b/g, 'view'], [/\bocean\b/g, 'sea'], [/\b2 single beds\b|\btwo single beds\b|\b2 twin beds\b/g, 'twin'], [/\b1 bedroom\b|\bone bedroom\b/g, 'onebed'], [/\b2 bedrooms?\b|\btwo bedrooms?\b/g, 'twobed']];
+  function norm(s) { s = String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim(); SYN.forEach(function (p) { s = s.replace(p[0], p[1]); }); return ' ' + s + ' '; }
+  var CLASS = ['junior suite', 'suite', 'executive', 'club', 'premium', 'deluxe', 'superior', 'classic', 'standard', 'comfort', 'economy', 'family', 'studio', 'apartment'];
+  var BED = ['king', 'queen', 'double', 'twin', 'single', 'triple', 'quadruple'];
+  var VIEW = ['sea', 'city', 'garden', 'pool', 'river', 'courtyard', 'mountain', 'lake'];
+  var EXTRA = ['balcony', 'terrace', 'onebed', 'twobed', 'access', 'lounge', 'accessible'];
+  function first(n, list) { for (var i = 0; i < list.length; i++) if (n.indexOf(' ' + list[i] + ' ') >= 0) return list[i]; return null; }
+  function attrs(s) { var n = norm(s), a = { cls: first(n, CLASS), bed: first(n, BED), view: first(n, VIEW), ex: EXTRA.filter(function (e) { return n.indexOf(' ' + e + ' ') >= 0; }) }; if (a.cls === 'suite' && n.indexOf(' junior ') >= 0) a.cls = 'junior suite'; return a; }
+  function ruleScore(a, b) {
+    var s = 0;
+    [['cls', 3], ['bed', 2], ['view', 2]].forEach(function (k) { var x = a[k[0]], y = b[k[0]]; if (x && y) s += x === y ? k[1] : (k[0] === 'bed' && ((x === 'double' && (y === 'king' || y === 'queen')) || (y === 'double' && (x === 'king' || x === 'queen'))) ? 0.5 : -k[1]); else if (x || y) s -= 0.4; });
+    a.ex.forEach(function (e) { s += b.ex.indexOf(e) >= 0 ? 1.5 : -0.6; }); b.ex.forEach(function (e) { if (a.ex.indexOf(e) < 0) s -= 0.6; });
+    return s;
+  }
+  function tri(s) { var n = norm(s).replace(/ (room|bed|beds|with|and|or|non refundable|refundable|ro|bb|hb|fb|ai) /g, ' '), t = {}; for (var i = 0; i < n.length - 2; i++) t[n.substr(i, 3)] = (t[n.substr(i, 3)] || 0) + 1; return t; }
+  function cos(a, b) { var d = 0, x = 0, y = 0, k; for (k in a) { x += a[k] * a[k]; if (b[k]) d += a[k] * b[k]; } for (k in b) y += b[k] * b[k]; return x && y ? d / Math.sqrt(x * y) : 0; }
+  function predict(rate, master) {
+    if (!master.length) return null;
+    var ra = attrs(rate.name), rt = tri(rate.name);
+    var R = master.map(function (m) { return { id: m.id, s: ruleScore(ra, m._a) }; }).sort(function (a, b) { return b.s - a.s; });
+    var S = master.map(function (m) { return { id: m.id, s: cos(rt, m._t) }; }).sort(function (a, b) { return b.s - a.s; });
+    var gapR = R.length > 1 ? R[0].s - R[1].s : R[0].s, gapS = S.length > 1 ? S[0].s - S[1].s : S[0].s;
+    var cr = Math.max(0, Math.min(1, (R[0].s > 0 ? 0.35 : 0) + gapR / 5)), cs = Math.max(0, Math.min(1, S[0].s * 0.6 + gapS * 1.6));
+    var hyb = R[0].id === S[0].id ? { id: R[0].id, c: Math.min(1, 0.55 + 0.45 * Math.max(cr, cs)) } : (cr >= cs ? { id: R[0].id, c: cr * 0.5 } : { id: S[0].id, c: cs * 0.5 });
+    return { rule: { id: R[0].id, c: cr }, sim: { id: S[0].id, c: cs }, hyb: hyb };
+  }
+
+  // ---------- data
+  var D = null, ROWS = [], live = false;
+  function prep(d) {
+    D = d; ROWS = [];
+    d.hotels.forEach(function (h) { h.master.forEach(function (m) { m._a = attrs(m.name); m._t = tri(m.name); }); h._m = {}; h.master.forEach(function (m) { h._m[m.id] = m; }); h.rates.forEach(function (r) { var p = predict(r, h.master); ROWS.push({ h: h, r: r, p: p, ref: r.mapped && h._m[r.mapped] ? r.mapped : null, refRaw: r.mapped }); }); });
+    $('src').innerHTML = live ? '<span class="pill2 live">Live LiteAPI sandbox data</span> <span class="note">Pulled ' + esc(d.fetched) + ', check-in ' + esc(d.checkin || '') + ', ' + esc(d.occupancy || '') + '.</span>' : '<span class="pill2 sample">Illustrative sample</span> <span class="note">Hand-written room names in the shape of LiteAPI data, not LiteAPI data. Live data appears once the fetch job has run with the LiteAPI key.</span>';
+    mess(); methods(); examples(); decide();
+  }
+  function mess() {
+    var hotels = D.hotels, names = ROWS.length, mapped = ROWS.filter(function (x) { return x.refRaw; }).length, masters = hotels.reduce(function (s, h) { return s + h.master.length; }, 0);
+    var mids = {}; ROWS.forEach(function (x) { if (x.ref) mids[x.h.id + '|' + x.ref] = (mids[x.h.id + '|' + x.ref] || 0) + 1; });
+    var per = Object.keys(mids).length ? ROWS.filter(function (x) { return x.ref; }).length / Object.keys(mids).length : 0;
+    $('mess-stats').innerHTML = [[hotels.length, 'hotels'], [names.toLocaleString('en-US'), 'distinct supplier rate names'], [pct(names ? mapped / names : 0), 'mapped by LiteAPI'], [per.toFixed(1), 'names per mapped master room']].map(function (s) { return '<div class="stat"><b>' + s[0] + '</b><span>' + s[1] + '</span></div>'; }).join('');
+    var C = {}; ROWS.forEach(function (x) { var c = C[x.h.city] = C[x.h.city] || { h: {}, n: 0, m: 0, g: {} }; c.h[x.h.id] = 1; c.n++; if (x.refRaw) { c.m++; c.g[x.h.id + x.refRaw] = 1; } });
+    $('cities').innerHTML = Object.keys(C).sort(function (a, b) { return C[b].n - C[a].n; }).map(function (k) { var c = C[k], cov = c.n ? c.m / c.n : 0; return '<tr><td>' + esc(k) + '</td><td class="n">' + Object.keys(c.h).length + '</td><td class="n">' + c.n + '</td><td class="n">' + c.m + '</td><td class="n ' + (cov >= 0.9 ? 'ok' : cov >= 0.7 ? 'mid' : 'bad') + '">' + pct(cov) + '</td><td class="n">' + (Object.keys(c.g).length ? (c.m / Object.keys(c.g).length).toFixed(1) : '–') + '</td></tr>'; }).join('');
+    $('hotel').innerHTML = hotels.map(function (h, i) { return '<option value="' + i + '">' + esc(h.name) + ' · ' + esc(h.city) + ' · ' + h.rates.length + ' names</option>'; }).join('');
+    hotel(0);
+  }
+  function hotel(i) {
+    var h = D.hotels[i]; $('hotel').value = i;
+    var un = h.rates.filter(function (r) { return !r.mapped; });
+    $('hotel-sub').textContent = h.master.length + ' master rooms, ' + h.rates.length + ' supplier rate names, ' + un.length + ' left unmapped.';
+    $('groups').innerHTML = h.master.map(function (m) { var ns = h.rates.filter(function (r) { return r.mapped === m.id; }); return '<div class="group"><b>' + esc(m.name) + '</b> <span class="note">master room ' + esc(m.id) + ' · ' + ns.length + ' supplier name' + (ns.length === 1 ? '' : 's') + '</span><div class="names">' + ns.map(function (r) { return '<span>' + esc(r.name) + '</span>'; }).join('') + '</div></div>'; }).join('') +
+      (un.length ? '<div class="group" style="border-color:#ffcdd2"><b>Left unmapped</b><div class="names">' + un.map(function (r) { return '<span class="un">' + esc(r.name) + '</span>'; }).join('') + '</div></div>' : '');
+  }
+  $('hotel').addEventListener('change', function () { hotel(+this.value); });
+  $('messiest').addEventListener('click', function () { var best = 0, bs = -1; D.hotels.forEach(function (h, i) { var s = h.rates.length / Math.max(1, h.master.length) + h.rates.filter(function (r) { return !r.mapped; }).length; if (s > bs) { bs = s; best = i; } }); hotel(best); });
+
+  function evalM(m, t) { var E = ROWS.filter(function (x) { return x.ref && x.p; }), auto = E.filter(function (x) { return x.p[m].c >= t; }), ok = auto.filter(function (x) { return x.p[m].id === x.ref; }).length; return { n: E.length, all: E.filter(function (x) { return x.p[m].id === x.ref; }).length / Math.max(1, E.length), auto: auto.length / Math.max(1, E.length), prec: auto.length ? ok / auto.length : 0 }; }
+  function methods() {
+    var M = [['rule', 'Rules', 'Microseconds per name, no cost, fully explainable'], ['sim', 'Text similarity', 'Microseconds per name, no cost, explainable as overlap'], ['hyb', 'Hybrid', 'Same as the two above']];
+    $('methods').innerHTML = M.map(function (m) { var e = evalM(m[0], 0), a = evalM(m[0], 0.8); return '<tr><td><b>' + m[1] + '</b></td><td class="n">' + pct(e.all) + '</td><td class="n">' + pct(a.auto) + '</td><td class="n">' + pct(a.prec) + '</td><td class="sub" style="margin:0">' + m[2] + '</td></tr>'; }).join('') + '<tr><td><b>LLM judge</b></td><td class="n">[to measure]</td><td class="n">only the uncertain slice</td><td class="n">[to measure]</td><td class="sub" style="margin:0">[cost per 1,000 calls], [latency]. Not on the booking path.</td></tr>';
+  }
+  function examples() {
+    var m = $('ex-m').value, nm = function (h, id) { return h._m[id] ? h._m[id].name : id; };
+    var dis = ROWS.filter(function (x) { return x.ref && x.p && x.p[m].id !== x.ref; }).sort(function (a, b) { return b.p[m].c - a.p[m].c; }).slice(0, 12);
+    $('ex').innerHTML = dis.length ? dis.map(function (x) { return '<tr><td>' + esc(x.r.name) + '</td><td>' + esc(nm(x.h, x.ref)) + '</td><td>' + esc(nm(x.h, x.p[m].id)) + '</td><td class="n">' + x.p[m].c.toFixed(2) + '</td></tr>'; }).join('') : '<tr><td colspan="4" class="empty">No disagreements.</td></tr>';
+    var un = ROWS.filter(function (x) { return !x.refRaw && x.p; }).sort(function (a, b) { return b.p.hyb.c - a.p.hyb.c; }).slice(0, 12);
+    $('un').innerHTML = un.length ? un.map(function (x) { return '<tr><td>' + esc(x.r.name) + '</td><td>' + esc(x.h.name) + '</td><td>' + esc(nm(x.h, x.p.hyb.id)) + '</td><td class="n">' + x.p.hyb.c.toFixed(2) + '</td></tr>'; }).join('') : '<tr><td colspan="4" class="empty">No unmapped rates.</td></tr>';
+  }
+  $('ex-m').addEventListener('change', examples);
+
+  function inputs() { return { vol: +$('vol').value || 0, cap: +$('cap').value || 0, rc: +$('rc').value || 0, bk: (+$('bk').value || 0) / 100, wc: +$('wc').value || 0, vv: +$('vv').value || 0 }; }
+  function net(m, t, I) {
+    var e = evalM(m, t), auto = I.vol * e.auto, wrong = auto * (1 - e.prec), right = auto - wrong, queue = I.vol - auto, reviewed = Math.min(queue, I.cap);
+    return { e: e, auto: auto, queue: queue, reviewed: reviewed, left: queue - reviewed, net: (right + reviewed) * I.vv - wrong * I.bk * I.wc - reviewed * I.rc };
+  }
+  function decide() {
+    if (!D) return;
+    var m = $('dm').value, t = +$('t').value, I = inputs(), r = net(m, t, I);
+    $('o-t').textContent = t.toFixed(2);
+    $('d-auto').textContent = pct(r.e.auto); $('d-agree').textContent = pct(r.e.prec); $('d-queue').textContent = Math.round(r.queue).toLocaleString('en-US'); $('d-net').textContent = eur(r.net);
+    var curve = []; for (var x = 0; x <= 1.0001; x += 0.05) curve.push([x, net(m, x, I).net]);
+    var best = curve.slice().sort(function (a, b) { return b[1] - a[1]; })[0];
+    $('d-verdict').innerHTML = '<b class="t">With these inputs, the best threshold is ' + best[0].toFixed(2) + ', worth ' + eur(best[1]) + ' a month.</b>At ' + t.toFixed(2) + ' you auto-map ' + pct(r.e.auto) + ' of names with ' + pct(r.e.prec) + ' agreement, send ' + Math.round(r.queue).toLocaleString('en-US') + ' to review' + (r.left > 0 ? ', and ' + Math.round(r.left).toLocaleString('en-US') + ' stay unmapped because review capacity runs out' : '') + '. Expected wrong rooms booked: ' + Math.round(r.auto * (1 - r.e.prec) * I.bk).toLocaleString('en-US') + ' a month.';
+    var W = Math.max(360, Math.min(700, $('d-chart').getBoundingClientRect().width || 700)), H = 280, L = 70, B = 30, T = 12, R = 12; $('d-chart').setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+    var ys = curve.map(function (c) { return c[1]; }), mn = Math.min(0, Math.min.apply(null, ys)), mx = Math.max(1, Math.max.apply(null, ys)) * 1.08;
+    var X = function (v) { return L + v * (W - L - R); }, Y = function (v) { return H - B - (v - mn) / (mx - mn) * (H - B - T); };
+    var g = '';
+    for (var k = 0; k <= 4; k++) { var v = mn + (mx - mn) * k / 4; g += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + Y(v) + '" y2="' + Y(v) + '" stroke="#eeebe5"/><text x="' + (L - 6) + '" y="' + (Y(v) + 4) + '" text-anchor="end">' + eur(v) + '</text>'; }
+    if (mn < 0) g += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + Y(0) + '" y2="' + Y(0) + '" stroke="#999"/>';
+    [0, 0.25, 0.5, 0.75, 1].forEach(function (v) { g += '<text x="' + X(v) + '" y="' + (H - 10) + '" text-anchor="middle">' + v.toFixed(2) + '</text>'; });
+    g += '<polyline fill="none" stroke="#4527a0" stroke-width="2.5" points="' + curve.map(function (c) { return X(c[0]).toFixed(1) + ',' + Y(c[1]).toFixed(1); }).join(' ') + '"/>';
+    g += '<circle cx="' + X(best[0]) + '" cy="' + Y(best[1]) + '" r="6" fill="#2e7d32"/><circle cx="' + X(t) + '" cy="' + Y(r.net) + '" r="6" fill="#ffca28" stroke="#4527a0" stroke-width="2"/>';
+    $('d-chart').innerHTML = g;
+    // sensitivity: best threshold when wrong-room cost and review cost change
+    var rows = [['Cost of a wrong room × 0.5', { wc: I.wc * 0.5 }], ['Cost of a wrong room × 2', { wc: I.wc * 2 }], ['Review capacity × 0.5', { cap: I.cap * 0.5 }], ['Review capacity × 2', { cap: I.cap * 2 }], ['Review cost × 2', { rc: I.rc * 2 }]];
+    $('sens').innerHTML = '<table><thead><tr><th>If…</th><th class="n">Best threshold</th><th class="n">Net a month</th></tr></thead><tbody>' + rows.map(function (q) { var J = Object.assign({}, I, q[1]), bb = null; for (var x = 0; x <= 1.0001; x += 0.05) { var n = net(m, x, J).net; if (!bb || n > bb[1]) bb = [x, n]; } return '<tr><td>' + q[0] + '</td><td class="n">' + bb[0].toFixed(2) + '</td><td class="n">' + eur(bb[1]) + '</td></tr>'; }).join('') + '</tbody></table>';
+    $('sens-note').innerHTML = '<p>The right threshold is not a technical constant. It moves with the cost of a wrong room and with how much review capacity the team has.</p><p>That is why I would agree those two numbers with finance and operations first, and set thresholds per room risk class from them.</p>';
+  }
+  ['t', 'dm', 'vol', 'cap', 'rc', 'bk', 'wc', 'vv'].forEach(function (id) { $(id).addEventListener('input', decide); $(id).addEventListener('change', decide); });
+
+  fetch('data/live.json', { cache: 'no-cache' }).then(function (r) { if (!r.ok) throw 0; return r.json(); }).then(function (d) { live = true; prep(d); })
+    .catch(function () { fetch('data/sample.json').then(function (r) { return r.json(); }).then(function (d) { live = false; prep(d); }); });
+})();
+</script>
+</body>
+</html>

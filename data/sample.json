@@ -1,0 +1,502 @@
+{
+"fetched": null,
+"source": "Illustrative sample written by hand, not LiteAPI data",
+"hotels": [
+{
+"id": "s1",
+"name": "Sample Hotel A",
+"city": "Paris",
+"stars": 4,
+"master": [
+{
+"id": "101",
+"name": "Standard Double Room"
+},
+{
+"id": "102",
+"name": "Superior Twin Room"
+},
+{
+"id": "103",
+"name": "Deluxe King Room with City View"
+},
+{
+"id": "104",
+"name": "Junior Suite"
+},
+{
+"id": "105",
+"name": "Family Room"
+}
+],
+"rates": [
+{
+"name": "Standard Double",
+"mapped": "101",
+"n": 1
+},
+{
+"name": "Double Room - Standard",
+"mapped": "101",
+"n": 1
+},
+{
+"name": "STD DBL RO",
+"mapped": "101",
+"n": 1
+},
+{
+"name": "Classic Double Room, 1 Double Bed",
+"mapped": "101",
+"n": 1
+},
+{
+"name": "Superior Room, 2 Twin Beds",
+"mapped": "102",
+"n": 1
+},
+{
+"name": "SUP TWN",
+"mapped": "102",
+"n": 1
+},
+{
+"name": "Twin Superior Non Refundable",
+"mapped": "102",
+"n": 1
+},
+{
+"name": "Deluxe Room, 1 King Bed, City View",
+"mapped": "103",
+"n": 1
+},
+{
+"name": "Deluxe King",
+"mapped": "103",
+"n": 1
+},
+{
+"name": "DLX KING CITY VIEW BB",
+"mapped": "103",
+"n": 1
+},
+{
+"name": "Junior Suite, 1 King Bed",
+"mapped": "104",
+"n": 1
+},
+{
+"name": "JR SUITE",
+"mapped": "104",
+"n": 1
+},
+{
+"name": "Family Room (2 adults + 2 children)",
+"mapped": "105",
+"n": 1
+},
+{
+"name": "Quadruple Room",
+"mapped": null,
+"n": 1
+},
+{
+"name": "Room, 1 Double Bed (Interior)",
+"mapped": null,
+"n": 1
+},
+{
+"name": "Executive Room, Lounge Access",
+"mapped": null,
+"n": 1
+}
+]
+},
+{
+"id": "s2",
+"name": "Sample Hotel B",
+"city": "Barcelona",
+"stars": 3,
+"master": [
+{
+"id": "201",
+"name": "Double Room"
+},
+{
+"id": "202",
+"name": "Twin Room"
+},
+{
+"id": "203",
+"name": "Double Room with Balcony"
+},
+{
+"id": "204",
+"name": "Triple Room"
+}
+],
+"rates": [
+{
+"name": "Double Room",
+"mapped": "201",
+"n": 1
+},
+{
+"name": "Double or Twin Room",
+"mapped": "201",
+"n": 1
+},
+{
+"name": "DBL",
+"mapped": "201",
+"n": 1
+},
+{
+"name": "Twin Room",
+"mapped": "202",
+"n": 1
+},
+{
+"name": "Twin Room - 2 single beds",
+"mapped": "202",
+"n": 1
+},
+{
+"name": "Double Room with Balcony",
+"mapped": "203",
+"n": 1
+},
+{
+"name": "Double Balcony",
+"mapped": "203",
+"n": 1
+},
+{
+"name": "DBL BALCONY SEA GLIMPSE",
+"mapped": "203",
+"n": 1
+},
+{
+"name": "Triple Room",
+"mapped": "204",
+"n": 1
+},
+{
+"name": "Room for 3",
+"mapped": "204",
+"n": 1
+},
+{
+"name": "Standard Room",
+"mapped": null,
+"n": 1
+},
+{
+"name": "Economy Double Room",
+"mapped": null,
+"n": 1
+}
+]
+},
+{
+"id": "s3",
+"name": "Sample Hotel C",
+"city": "Rome",
+"stars": 4,
+"master": [
+{
+"id": "301",
+"name": "Classic Room"
+},
+{
+"id": "302",
+"name": "Superior Room"
+},
+{
+"id": "303",
+"name": "Deluxe Room with Terrace"
+},
+{
+"id": "304",
+"name": "Suite"
+}
+],
+"rates": [
+{
+"name": "Classic Double",
+"mapped": "301",
+"n": 1
+},
+{
+"name": "Classic Room, 1 Queen Bed",
+"mapped": "301",
+"n": 1
+},
+{
+"name": "Superior Double or Twin",
+"mapped": "302",
+"n": 1
+},
+{
+"name": "SUPERIOR ROOM",
+"mapped": "302",
+"n": 1
+},
+{
+"name": "Deluxe Terrace",
+"mapped": "303",
+"n": 1
+},
+{
+"name": "Deluxe Room, Terrace",
+"mapped": "303",
+"n": 1
+},
+{
+"name": "Suite, 1 King Bed",
+"mapped": "304",
+"n": 1
+},
+{
+"name": "Executive Suite",
+"mapped": "304",
+"n": 1
+},
+{
+"name": "Deluxe Room",
+"mapped": null,
+"n": 1
+},
+{
+"name": "Comfort Room",
+"mapped": null,
+"n": 1
+}
+]
+},
+{
+"id": "s4",
+"name": "Sample Hotel D",
+"city": "Kraków",
+"stars": 3,
+"master": [
+{
+"id": "401",
+"name": "Single Room"
+},
+{
+"id": "402",
+"name": "Double Room"
+},
+{
+"id": "403",
+"name": "Apartment"
+}
+],
+"rates": [
+{
+"name": "Single Room",
+"mapped": "401",
+"n": 1
+},
+{
+"name": "Single Room Economy",
+"mapped": "401",
+"n": 1
+},
+{
+"name": "Double Room",
+"mapped": "402",
+"n": 1
+},
+{
+"name": "Double Room, Courtyard",
+"mapped": "402",
+"n": 1
+},
+{
+"name": "DBL STD",
+"mapped": "402",
+"n": 1
+},
+{
+"name": "Apartment, 1 Bedroom",
+"mapped": "403",
+"n": 1
+},
+{
+"name": "Studio Apartment",
+"mapped": "403",
+"n": 1
+},
+{
+"name": "Twin Room",
+"mapped": null,
+"n": 1
+},
+{
+"name": "Double Room for single use",
+"mapped": "402",
+"n": 1
+}
+]
+},
+{
+"id": "s5",
+"name": "Sample Hotel E",
+"city": "Dubai",
+"stars": 5,
+"master": [
+{
+"id": "501",
+"name": "Deluxe Room, King, Sea View"
+},
+{
+"id": "502",
+"name": "Deluxe Room, Twin, City View"
+},
+{
+"id": "503",
+"name": "Club Room"
+},
+{
+"id": "504",
+"name": "One Bedroom Suite"
+}
+],
+"rates": [
+{
+"name": "Deluxe King Sea View",
+"mapped": "501",
+"n": 1
+},
+{
+"name": "Deluxe Room, 1 King Bed, Sea View",
+"mapped": "501",
+"n": 1
+},
+{
+"name": "Deluxe Sea View",
+"mapped": "501",
+"n": 1
+},
+{
+"name": "Deluxe Twin City View",
+"mapped": "502",
+"n": 1
+},
+{
+"name": "Deluxe Room, 2 Twin Beds",
+"mapped": "502",
+"n": 1
+},
+{
+"name": "Club King, Club Lounge Access",
+"mapped": "503",
+"n": 1
+},
+{
+"name": "Club Room",
+"mapped": "503",
+"n": 1
+},
+{
+"name": "Suite, 1 Bedroom",
+"mapped": "504",
+"n": 1
+},
+{
+"name": "One Bedroom Suite Sea View",
+"mapped": "504",
+"n": 1
+},
+{
+"name": "Deluxe Room",
+"mapped": null,
+"n": 1
+},
+{
+"name": "Premium Room, Sea View",
+"mapped": null,
+"n": 1
+}
+]
+},
+{
+"id": "s6",
+"name": "Sample Hotel F",
+"city": "Bangkok",
+"stars": 4,
+"master": [
+{
+"id": "601",
+"name": "Superior Room"
+},
+{
+"id": "602",
+"name": "Deluxe Room"
+},
+{
+"id": "603",
+"name": "Deluxe Pool Access"
+},
+{
+"id": "604",
+"name": "Family Suite"
+}
+],
+"rates": [
+{
+"name": "Superior King",
+"mapped": "601",
+"n": 1
+},
+{
+"name": "Superior Twin",
+"mapped": "601",
+"n": 1
+},
+{
+"name": "SUP RM",
+"mapped": "601",
+"n": 1
+},
+{
+"name": "Deluxe King",
+"mapped": "602",
+"n": 1
+},
+{
+"name": "Deluxe Room, River View",
+"mapped": "602",
+"n": 1
+},
+{
+"name": "Deluxe Pool Access",
+"mapped": "603",
+"n": 1
+},
+{
+"name": "Pool Access Room",
+"mapped": "603",
+"n": 1
+},
+{
+"name": "Family Suite, 2 Bedrooms",
+"mapped": "604",
+"n": 1
+},
+{
+"name": "Grand Deluxe",
+"mapped": null,
+"n": 1
+},
+{
+"name": "Superior Room, Pool View",
+"mapped": null,
+"n": 1
+}
+]
+}
+]
+}

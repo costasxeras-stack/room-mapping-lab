@@ -1,0 +1,10 @@
+{
+  "name": "room-mapping-lab",
+  "version": "0.1.0",
+  "description": "Supplier room names against master rooms from the LiteAPI sandbox: three matching methods tested against LiteAPI's own mapping, and the confidence threshold turned into a business decision.",
+  "private": true,
+  "scripts": {
+    "serve": "python3 -m http.server 8000"
+  },
+  "license": "MIT"
+}
