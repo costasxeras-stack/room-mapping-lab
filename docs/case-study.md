@@ -93,4 +93,4 @@ Full record: [decisions/0004-key-in-actions.md](decisions/0004-key-in-actions.md
 
 ## My role
 
-I framed the problem, made the product calls, checked every number and wrote the conclusions. Claude (Anthropic) wrote the code with me. 
+I framed the problem, made the product calls, checked every number and wrote the conclusions. 

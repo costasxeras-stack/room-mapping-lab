@@ -71,9 +71,9 @@ These are the measures I would run a mapping product on.
 3. Hand-label an audit sample to measure precision against truth, not agreement
 4. Thresholds per room risk class (suites and views stricter than simple doubles)
 
-## How it was built
+## My role
 
-I framed the problem, made the product calls and wrote the conclusions. Claude (Anthropic) was my engineering partner for the code. 
+I framed the problem, made the product calls and wrote the conclusions. 
 
 ## Run it yourself
 
