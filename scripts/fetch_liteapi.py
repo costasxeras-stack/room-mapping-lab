@@ -44,7 +44,14 @@ def main():
         if not places:
             print(f"no place for {city}", file=sys.stderr)
             continue
-        pid = places[0].get("placeId")
+        # Prefer the place in the expected country: a bare city name can resolve to a namesake elsewhere (Rome, Georgia)
+        want = {"Paris": "FR", "Barcelona": "ES", "Rome": "IT", "London": "GB", "Kraków": "PL", "Dubai": "AE", "New York": "US", "Bangkok": "TH"}.get(city)
+        def _cc(p):
+            return str(p.get("countryCode") or p.get("country") or "").upper()[:2]
+        pick = next((p for p in places if want and _cc(p) == want), None)
+        pid = (pick or places[0]).get("placeId")
+        place_label = (pick or places[0]).get("displayName") or (pick or places[0]).get("formattedAddress") or ""
+        out.setdefault("places", {})[city] = {"label": place_label, "matched_country": bool(pick), "first_result": places[0].get("displayName") or "", "candidates": len(places)}
         rates = call("/hotels/rates", {"placeId": pid, "checkin": checkin.isoformat(), "checkout": checkout.isoformat(), "currency": "EUR",
                                        "guestNationality": "GB", "occupancies": [{"adults": 2}], "roomMapping": True, "includeHotelData": True,
                                        "maxRatesPerHotel": 200, "limit": HOTELS_PER_CITY, "timeout": 30})
@@ -67,6 +74,7 @@ def main():
                        "beds": [f"{b.get('quantity', 1)} x {b.get('bedType', '')}" for b in x.get("bedTypes") or []],
                        "size": x.get("roomSizeSquare")} for x in d.get("rooms") or []]
             out["hotels"].append({"id": hid, "name": d.get("name") or info.get(hid, {}).get("name") or hid, "city": city,
+                                  "address": ", ".join(str(x) for x in [d.get("address"), d.get("city"), d.get("country")] if x),
                                   "stars": d.get("starRating") or info.get(hid, {}).get("stars"), "master": master, "rates": list(seen.values())})
             time.sleep(0.2)
         print(f"{city}: {sum(1 for x in out['hotels'] if x['city'] == city)} hotels")
