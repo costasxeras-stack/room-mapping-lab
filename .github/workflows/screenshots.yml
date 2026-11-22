@@ -1,0 +1,32 @@
+# Takes desktop and mobile screenshots of the page with live data and saves them to docs/screenshots/.
+# Run it by hand from the Actions tab after a visible change.
+name: Screenshots
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: [".github/workflows/screenshots.yml", "scripts/screenshots.py"]
+
+permissions:
+  contents: write
+
+jobs:
+  shoot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install playwright pillow && python -m playwright install --with-deps chromium
+      - run: python scripts/screenshots.py
+      - name: Commit if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          git add docs/screenshots
+          if git diff --cached --quiet; then echo "No change"; exit 0; fi
+          git commit -m "docs: screenshots with live data"
+          git pull --rebase origin main
+          git push
