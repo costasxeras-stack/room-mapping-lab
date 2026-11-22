@@ -12,23 +12,31 @@ I reused what I had learned building KostasTravel on LiteAPI: rates with room ma
 
 ### 1. Simple methods agree with LiteAPI's mapping on most names, but not enough to automate everything (confirmed on sandbox data, 22 November 2026)
 
-On 1,638 distinct rate names from 173 hotels in 8 cities, the hybrid method picked the same master room as LiteAPI for 84%, text similarity 84% and rules 65%. At a confidence of 0.8 the hybrid would auto-map 59% of names with 94% agreement, and at 0.95 it would auto-map 40% with 98% agreement.
+On 1,710 distinct rate names from 187 hotels in 8 cities, the hybrid method and text similarity picked the same master room as LiteAPI for 85% of names, rules for 65%. At a confidence of 0.8 the hybrid would auto-map 62% of names with 94% agreement.
 
-### 2. Every rate returned already had a mapping (confirmed on sandbox data)
+### 2. Whole hotels point to room IDs that are not in their room list (confirmed on sandbox data, cause is a hypothesis)
 
-All 1,638 names came back with a mappedRoomId, so the sandbox shows no coverage gap. The real gap, rates that stay unmapped in production, needs production data: [to measure].
+In 3 of 187 hotels, all in Barcelona, every rate (37 names) is mapped to a room ID missing from the hotel's content room list. Because it is all rates in each hotel, it looks like a per-hotel ID mismatch between rate mapping and content, not a matching error.
 
-### 3. Whole hotels point to room IDs that are not in their room list (confirmed on sandbox data, cause is a hypothesis)
+### 3. Some accessible rates are mapped to rooms not marked accessible (confirmed on sandbox data)
 
-In 3 of 173 hotels, all in Barcelona, every rate (35 names) is mapped to a room ID missing from the hotel's content room list. Because it is all rates in each hotel, not random ones, it looks like an ID mismatch between rate mapping and content for those hotels, not a matching error. Worth an integrity check that runs per hotel.
+Of 73 mapped rate names that mention accessibility, 4 (in 4 New York hotels) are mapped to a room with no accessibility marker, although each hotel has accessible rooms in its list. Small in number, high in cost per error.
 
-### 4. Disagreements are the most useful output (confirmed on sandbox data)
+### 4. Duplicate master rooms in content (confirmed on sandbox data)
 
-Several disagreements look like the reference could be refined, for example "2 Single Beds, Garden View" mapped to "2 Single Beds" while the hotel also has "2 Single Beds, Garden View". Others are clear errors by my methods. Either way they form an audit list.
+45 extra copies of a master room name across 24 hotels, for example the same room name twice in one hotel. Rates for one room can split across the copies.
 
-### 5. The best threshold depends on business inputs, not only on the model (design finding)
+### 5. Destination search: the first result for "Rome" is Rome, Georgia (confirmed on sandbox data)
 
-With the example inputs, doubling the cost of a wrong room moves the best threshold from 0.35 to 0.90, and doubling review capacity moves it to 0.85.
+The places endpoint returned 5 candidates for "Rome" and the first was Rome, GA, USA. My first pull took the first result and got 11 hotels in Georgia. The fetch now picks the candidate in the expected country.
+
+### 6. Clean on consistency, and no coverage gap in the sandbox (confirmed on sandbox data)
+
+No supplier name maps to two different rooms within one hotel. Every rate returned had a mapping, so the real unmapped share needs production data: [to measure].
+
+### 7. The best threshold depends on business inputs, not only on the model (design finding)
+
+With the example inputs, the best threshold is 0.85. Halving the cost of a wrong room moves it to 0.35, doubling it moves it to 0.90.
 
 ## Decisions
 
