@@ -62,7 +62,7 @@ svg text{font:11.5px var(--body);fill:var(--muted)}
       <h2>What the data looks like</h2>
       <div class="stats" id="mess-stats"></div>
       <h3 style="font:600 15px var(--body);margin-top:16px">Coverage by city</h3>
-      <div style="overflow-x:auto"><table><thead><tr><th>City</th><th class="n">Hotels</th><th class="n">Rate names</th><th class="n">Mapped by LiteAPI</th><th class="n">Coverage</th><th class="n">Names per master room</th></tr></thead><tbody id="cities"></tbody></table></div>
+      <div style="overflow-x:auto"><table><thead><tr><th>City</th><th class="n">Hotels</th><th class="n">Rate names</th><th class="n">Mapped by LiteAPI</th><th class="n">Coverage</th><th class="n">Mapped to a room not in the hotel's list</th><th class="n">Names per master room</th></tr></thead><tbody id="cities"></tbody></table></div>
     </section>
     <section class="card">
       <h2>One hotel, up close</h2>
@@ -89,7 +89,7 @@ svg text{font:11.5px var(--body);fill:var(--muted)}
       <h2>Where the methods disagree with LiteAPI</h2>
       <p class="sub">The most useful rows for a mapping team: either the method is wrong, or the reference is. Method: <select id="ex-m" style="max-width:180px;display:inline-block"><option value="hyb">Hybrid</option><option value="rule">Rules</option><option value="sim">Similarity</option></select></p>
       <div style="overflow-x:auto"><table class="ex"><thead><tr><th>Supplier name</th><th>LiteAPI mapped to</th><th>Method picked</th><th class="n">Confidence</th></tr></thead><tbody id="ex"></tbody></table></div>
-      <h3 style="font:600 15px var(--body);margin-top:16px">Rates LiteAPI left unmapped, and what the hybrid would suggest</h3>
+      <h3 style="font:600 15px var(--body);margin-top:16px" id="un-h">Rates LiteAPI left unmapped, and what the hybrid would suggest</h3>
       <div style="overflow-x:auto"><table class="ex"><thead><tr><th>Supplier name</th><th>Hotel</th><th>Suggestion</th><th class="n">Confidence</th></tr></thead><tbody id="un"></tbody></table></div>
     </section>
   </div>
@@ -177,7 +177,7 @@ svg text{font:11.5px var(--body);fill:var(--muted)}
 
   // ---------- normalisation and attributes
   var SYN = [[/\bdbl\b/g, 'double'], [/\btwn\b/g, 'twin'], [/\bsgl\b/g, 'single'], [/\btpl\b|\btrpl\b/g, 'triple'], [/\bstd\b/g, 'standard'], [/\bsup\b/g, 'superior'], [/\bdlx\b|\bdeluxe\b/g, 'deluxe'], [/\bjr\b|\bjun\b/g, 'junior'], [/\bste\b/g, 'suite'], [/\brm\b/g, 'room'], [/\bapt\b|\bapartment\b|\bappartement\b/g, 'apartment'], [/\bexec\b/g, 'executive'], [/\bquad\b|\bquadruple\b/g, 'quadruple'], [/\bkg\b/g, 'king'], [/\bqn\b/g, 'queen'], [/\bvw\b/g, 'view'], [/\bocean\b/g, 'sea'], [/\b2 single beds\b|\btwo single beds\b|\b2 twin beds\b/g, 'twin'], [/\b1 bedroom\b|\bone bedroom\b/g, 'onebed'], [/\b2 bedrooms?\b|\btwo bedrooms?\b/g, 'twobed']];
-  function norm(s) { s = String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim(); SYN.forEach(function (p) { s = s.replace(p[0], p[1]); }); return ' ' + s + ' '; }
+  function norm(s) { s = String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9 ]+/g, ' ').replace(/\b0+(\d)/g, '$1').replace(/\s+/g, ' ').trim(); SYN.forEach(function (p) { s = s.replace(p[0], p[1]); }); return ' ' + s + ' '; }
   var CLASS = ['junior suite', 'suite', 'executive', 'club', 'premium', 'deluxe', 'superior', 'classic', 'standard', 'comfort', 'economy', 'family', 'studio', 'apartment'];
   var BED = ['king', 'queen', 'double', 'twin', 'single', 'triple', 'quadruple'];
   var VIEW = ['sea', 'city', 'garden', 'pool', 'river', 'courtyard', 'mountain', 'lake'];
@@ -215,9 +215,9 @@ svg text{font:11.5px var(--body);fill:var(--muted)}
     var hotels = D.hotels, names = ROWS.length, mapped = ROWS.filter(function (x) { return x.refRaw; }).length, masters = hotels.reduce(function (s, h) { return s + h.master.length; }, 0);
     var mids = {}; ROWS.forEach(function (x) { if (x.ref) mids[x.h.id + '|' + x.ref] = (mids[x.h.id + '|' + x.ref] || 0) + 1; });
     var per = Object.keys(mids).length ? ROWS.filter(function (x) { return x.ref; }).length / Object.keys(mids).length : 0;
-    $('mess-stats').innerHTML = [[hotels.length, 'hotels'], [names.toLocaleString('en-US'), 'distinct supplier rate names'], [pct(names ? mapped / names : 0), 'mapped by LiteAPI'], [per.toFixed(1), 'names per mapped master room']].map(function (s) { return '<div class="stat"><b>' + s[0] + '</b><span>' + s[1] + '</span></div>'; }).join('');
-    var C = {}; ROWS.forEach(function (x) { var c = C[x.h.city] = C[x.h.city] || { h: {}, n: 0, m: 0, g: {} }; c.h[x.h.id] = 1; c.n++; if (x.refRaw) { c.m++; c.g[x.h.id + x.refRaw] = 1; } });
-    $('cities').innerHTML = Object.keys(C).sort(function (a, b) { return C[b].n - C[a].n; }).map(function (k) { var c = C[k], cov = c.n ? c.m / c.n : 0; return '<tr><td>' + esc(k) + '</td><td class="n">' + Object.keys(c.h).length + '</td><td class="n">' + c.n + '</td><td class="n">' + c.m + '</td><td class="n ' + (cov >= 0.9 ? 'ok' : cov >= 0.7 ? 'mid' : 'bad') + '">' + pct(cov) + '</td><td class="n">' + (Object.keys(c.g).length ? (c.m / Object.keys(c.g).length).toFixed(1) : '–') + '</td></tr>'; }).join('');
+    $('mess-stats').innerHTML = [[hotels.length, 'hotels'], [names.toLocaleString('en-US'), 'distinct supplier rate names'], [pct(names ? mapped / names : 0), 'mapped by LiteAPI'], [ROWS.filter(function (x) { return x.refRaw && !x.ref; }).length, 'mapped to a room ID missing from the hotel\'s room list'], [per.toFixed(1), 'names per mapped master room']].map(function (s) { return '<div class="stat"><b>' + s[0] + '</b><span>' + s[1] + '</span></div>'; }).join('');
+    var C = {}; ROWS.forEach(function (x) { var c = C[x.h.city] = C[x.h.city] || { h: {}, n: 0, m: 0, g: {}, o: 0 }; c.h[x.h.id] = 1; c.n++; if (x.refRaw) { c.m++; c.g[x.h.id + x.refRaw] = 1; if (!x.ref) c.o++; } });
+    $('cities').innerHTML = Object.keys(C).sort(function (a, b) { return C[b].n - C[a].n; }).map(function (k) { var c = C[k], cov = c.n ? c.m / c.n : 0; return '<tr><td>' + esc(k) + '</td><td class="n">' + Object.keys(c.h).length + '</td><td class="n">' + c.n + '</td><td class="n">' + c.m + '</td><td class="n ' + (cov >= 0.9 ? 'ok' : cov >= 0.7 ? 'mid' : 'bad') + '">' + pct(cov) + '</td><td class="n ' + (c.o ? 'mid' : '') + '">' + c.o + '</td><td class="n">' + (Object.keys(c.g).length ? (c.m / Object.keys(c.g).length).toFixed(1) : '–') + '</td></tr>'; }).join('');
     $('hotel').innerHTML = hotels.map(function (h, i) { return '<option value="' + i + '">' + esc(h.name) + ' · ' + esc(h.city) + ' · ' + h.rates.length + ' names</option>'; }).join('');
     hotel(0);
   }
@@ -240,8 +240,10 @@ svg text{font:11.5px var(--body);fill:var(--muted)}
     var m = $('ex-m').value, nm = function (h, id) { return h._m[id] ? h._m[id].name : id; };
     var dis = ROWS.filter(function (x) { return x.ref && x.p && x.p[m].id !== x.ref; }).sort(function (a, b) { return b.p[m].c - a.p[m].c; }).slice(0, 12);
     $('ex').innerHTML = dis.length ? dis.map(function (x) { return '<tr><td>' + esc(x.r.name) + '</td><td>' + esc(nm(x.h, x.ref)) + '</td><td>' + esc(nm(x.h, x.p[m].id)) + '</td><td class="n">' + x.p[m].c.toFixed(2) + '</td></tr>'; }).join('') : '<tr><td colspan="4" class="empty">No disagreements.</td></tr>';
-    var un = ROWS.filter(function (x) { return !x.refRaw && x.p; }).sort(function (a, b) { return b.p.hyb.c - a.p.hyb.c; }).slice(0, 12);
-    $('un').innerHTML = un.length ? un.map(function (x) { return '<tr><td>' + esc(x.r.name) + '</td><td>' + esc(x.h.name) + '</td><td>' + esc(nm(x.h, x.p.hyb.id)) + '</td><td class="n">' + x.p.hyb.c.toFixed(2) + '</td></tr>'; }).join('') : '<tr><td colspan="4" class="empty">No unmapped rates.</td></tr>';
+    var un = ROWS.filter(function (x) { return !x.refRaw && x.p; }), orph = ROWS.filter(function (x) { return x.refRaw && !x.ref && x.p; });
+    var L = (un.length ? un : orph).sort(function (a, b) { return b.p.hyb.c - a.p.hyb.c; }).slice(0, 12);
+    $('un-h').textContent = un.length ? 'Rates LiteAPI left unmapped, and what the hybrid would suggest' : 'No unmapped rates came back. ' + orph.length + ' rates point to a room ID that is not in the hotel\'s room list. The hybrid suggestion for each:';
+    $('un').innerHTML = L.length ? L.map(function (x) { return '<tr><td>' + esc(x.r.name) + '</td><td>' + esc(x.h.name) + '</td><td>' + esc(nm(x.h, x.p.hyb.id)) + '</td><td class="n">' + x.p.hyb.c.toFixed(2) + '</td></tr>'; }).join('') : '<tr><td colspan="4" class="empty">None.</td></tr>';
   }
   $('ex-m').addEventListener('change', examples);
 
