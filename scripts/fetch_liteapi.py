@@ -46,12 +46,18 @@ def main():
             continue
         # Prefer the place in the expected country: a bare city name can resolve to a namesake elsewhere (Rome, Georgia)
         want = {"Paris": "FR", "Barcelona": "ES", "Rome": "IT", "London": "GB", "Kraków": "PL", "Dubai": "AE", "New York": "US", "Bangkok": "TH"}.get(city)
+        names = {"FR": "france", "ES": "spain", "IT": "italy", "GB": "united kingdom", "PL": "poland", "AE": "united arab emirates", "US": "united states", "TH": "thailand"}
         def _cc(p):
-            return str(p.get("countryCode") or p.get("country") or "").upper()[:2]
+            cc = str(p.get("countryCode") or p.get("country") or "").upper()[:2]
+            if cc:
+                return cc
+            text = " ".join(str(v) for v in p.values() if isinstance(v, str)).lower()
+            return next((k for k, n in names.items() if n in text or f", {k.lower()}" in text), "")
         pick = next((p for p in places if want and _cc(p) == want), None)
         pid = (pick or places[0]).get("placeId")
         place_label = (pick or places[0]).get("displayName") or (pick or places[0]).get("formattedAddress") or ""
-        out.setdefault("places", {})[city] = {"label": place_label, "matched_country": bool(pick), "first_result": places[0].get("displayName") or "", "candidates": len(places)}
+        out.setdefault("places", {})[city] = {"label": place_label, "matched_country": bool(pick), "first_result": places[0].get("displayName") or "", "candidates": len(places),
+                                          "all": [{k: v for k, v in p.items() if isinstance(v, str)} for p in places]}
         rates = call("/hotels/rates", {"placeId": pid, "checkin": checkin.isoformat(), "checkout": checkout.isoformat(), "currency": "EUR",
                                        "guestNationality": "GB", "occupancies": [{"adults": 2}], "roomMapping": True, "includeHotelData": True,
                                        "maxRatesPerHotel": 200, "limit": HOTELS_PER_CITY, "timeout": 30})
