@@ -45,8 +45,9 @@ svg text{font:11.5px var(--body);fill:var(--muted)}
 <div class="tabs" role="tablist" aria-label="Sections"><div class="wrap">
   <button role="tab" data-view="mess" aria-selected="true">1 · The problem</button>
   <button role="tab" data-view="match" aria-selected="false">2 · Three ways to match</button>
-  <button role="tab" data-view="decide" aria-selected="false">3 · The decision</button>
-  <button role="tab" data-view="play" aria-selected="false">4 · Running it as a product</button>
+  <button role="tab" data-view="checks" aria-selected="false">3 · Data checks</button>
+  <button role="tab" data-view="decide" aria-selected="false">4 · The decision</button>
+  <button role="tab" data-view="play" aria-selected="false">5 · Running it as a product</button>
 </div></div>
 <main class="wrap">
   <section class="intro">
@@ -91,6 +92,15 @@ svg text{font:11.5px var(--body);fill:var(--muted)}
       <div style="overflow-x:auto"><table class="ex"><thead><tr><th>Supplier name</th><th>LiteAPI mapped to</th><th>Method picked</th><th class="n">Confidence</th></tr></thead><tbody id="ex"></tbody></table></div>
       <h3 style="font:600 15px var(--body);margin-top:16px" id="un-h">Rates LiteAPI left unmapped, and what the hybrid would suggest</h3>
       <div style="overflow-x:auto"><table class="ex"><thead><tr><th>Supplier name</th><th>Hotel</th><th>Suggestion</th><th class="n">Confidence</th></tr></thead><tbody id="un"></tbody></table></div>
+    </section>
+  </div>
+
+  <!-- checks -->
+  <div data-panel="checks" hidden>
+    <section class="card">
+      <h2>Data checks on the sandbox pull</h2>
+      <p class="sub">Five checks a mapping team could run every day. Each one is computed in your browser from the same data file, so the numbers update with every pull. They are findings on sandbox data and worth confirming on production before acting.</p>
+      <div id="checks"></div>
     </section>
   </div>
 
@@ -165,7 +175,7 @@ svg text{font:11.5px var(--body);fill:var(--muted)}
     </ul>
   </section>
 </main>
-<footer><div class="wrap"><span>Room Mapping Lab v0.1.0 by <a href="https://kostasxeras.com/">Konstantinos Xeras</a>, built with Claude (Anthropic). <a href="https://github.com/costasxeras-stack/room-mapping-lab">Code and decisions on GitHub</a>.</span></div></footer>
+<footer><div class="wrap"><span>Room Mapping Lab v0.2.0 by <a href="https://kostasxeras.com/">Konstantinos Xeras</a>, built with Claude (Anthropic). <a href="https://github.com/costasxeras-stack/room-mapping-lab">Code and decisions on GitHub</a>.</span></div></footer>
 <script>
 (function () {
   'use strict';
@@ -209,7 +219,7 @@ svg text{font:11.5px var(--body);fill:var(--muted)}
     D = d; ROWS = [];
     d.hotels.forEach(function (h) { h.master.forEach(function (m) { m._a = attrs(m.name); m._t = tri(m.name); }); h._m = {}; h.master.forEach(function (m) { h._m[m.id] = m; }); h.rates.forEach(function (r) { var p = predict(r, h.master); ROWS.push({ h: h, r: r, p: p, ref: r.mapped && h._m[r.mapped] ? r.mapped : null, refRaw: r.mapped }); }); });
     $('src').innerHTML = live ? '<span class="pill2 live">Live LiteAPI sandbox data</span> <span class="note">Pulled ' + esc(d.fetched) + ', check-in ' + esc(d.checkin || '') + ', ' + esc(d.occupancy || '') + '.</span>' : '<span class="pill2 sample">Illustrative sample</span> <span class="note">Hand-written room names in the shape of LiteAPI data, not LiteAPI data. Live data appears once the fetch job has run with the LiteAPI key.</span>';
-    mess(); methods(); examples(); decide();
+    mess(); methods(); examples(); checks(); decide();
   }
   function mess() {
     var hotels = D.hotels, names = ROWS.length, mapped = ROWS.filter(function (x) { return x.refRaw; }).length, masters = hotels.reduce(function (s, h) { return s + h.master.length; }, 0);
@@ -247,6 +257,29 @@ svg text{font:11.5px var(--body);fill:var(--muted)}
     $('un').innerHTML = L.length ? L.map(function (x) { return '<tr><td>' + esc(x.r.name) + '</td><td>' + esc(x.h.name) + '</td><td>' + esc(nm(x.h, x.p.hyb.id)) + '</td><td class="n">' + x.p.hyb.c.toFixed(2) + '</td></tr>'; }).join('') : '<tr><td colspan="4" class="empty">None.</td></tr>';
   }
   $('ex-m').addEventListener('change', examples);
+
+  var ACC = /accessib|mobility|hearing|disab|wheelchair|easy access|\bacc\b|\bada\b|roll.?in/i;
+  function checks() {
+    var out = [], card = function (n, title, big, what, why, act, rows) { out.push('<div class="group" style="padding:14px 16px;margin-top:12px"><div class="row" style="margin-top:0;align-items:baseline;gap:12px"><b style="font:700 28px var(--display);color:var(--accent)">' + big + '</b><b style="font-size:16px">' + n + '. ' + esc(title) + '</b></div><p style="margin:6px 0 0;font-size:14.5px">' + what + '</p><p class="sub" style="margin:6px 0 0"><b>Why it matters:</b> ' + why + '</p><p class="sub" style="margin:4px 0 0"><b>What I would do:</b> ' + act + '</p>' + (rows ? '<div style="overflow-x:auto;margin-top:8px"><table class="ex">' + rows + '</table></div>' : '') + '</div>'); };
+    // 1 integrity
+    var byH = {}; ROWS.forEach(function (x) { if (x.refRaw && !x.ref) { var k = x.h.id; byH[k] = byH[k] || { h: x.h, n: 0 }; byH[k].n++; } });
+    var oh = Object.keys(byH).map(function (k) { return byH[k]; }), on = oh.reduce(function (s, o) { return s + o.n; }, 0), full = oh.filter(function (o) { return o.n === o.h.rates.length; }).length;
+    card(1, 'Rates mapped to a room that is not in the hotel\'s room list', on, on + ' rate names in ' + oh.length + ' hotel' + (oh.length === 1 ? '' : 's') + ' point to a room ID missing from the hotel\'s content room list. In ' + full + ' of them it is every rate in the hotel, which points to a per-hotel ID mismatch between rate mapping and content, not a matching error.', 'the traveller sees a rate whose room has no content (name, photos, beds), or the rate cannot be grouped with the same room from other suppliers.', 'a daily per-hotel check: share of rates whose mapped ID exists in content, alerting when a hotel drops below a threshold.', oh.length ? '<thead><tr><th>Hotel</th><th>City</th><th class="n">Affected names</th><th class="n">Of</th></tr></thead><tbody>' + oh.map(function (o) { return '<tr><td>' + esc(o.h.name) + '</td><td>' + esc(o.h.city) + '</td><td class="n">' + o.n + '</td><td class="n">' + o.h.rates.length + '</td></tr>'; }).join('') + '</tbody>' : '');
+    // 2 accessibility
+    var accR = ROWS.filter(function (x) { return x.ref && ACC.test(x.r.name); }), bad = accR.filter(function (x) { return !ACC.test(x.h._m[x.ref].name) && x.h.master.some(function (m) { return ACC.test(m.name); }); });
+    card(2, 'Accessible rates mapped to a room that is not marked accessible', bad.length + ' / ' + accR.length, 'Of ' + accR.length + ' mapped rate names that mention accessibility, ' + bad.length + ' are mapped to a room without any accessibility marker, in hotels that do have accessible rooms in their list.', 'a guest who needs an accessible room may book a room that is not, and accessible rates can be compared against standard ones. The cost of one such booking is much higher than an average wrong room.', 'treat accessibility like bed type: a hard attribute that must match, with its own stricter threshold and a check that runs on every mapping.', bad.length ? '<thead><tr><th>Supplier name</th><th>Mapped to</th><th>Hotel</th></tr></thead><tbody>' + bad.map(function (x) { return '<tr><td>' + esc(x.r.name) + '</td><td>' + esc(x.h._m[x.ref].name) + '</td><td>' + esc(x.h.name) + '</td></tr>'; }).join('') + '</tbody>' : '');
+    // 3 duplicates
+    var dups = [], dupH = {}; D.hotels.forEach(function (h) { var c = {}; h.master.forEach(function (m) { var k = m.name.trim().toLowerCase(); c[k] = (c[k] || 0) + 1; }); Object.keys(c).forEach(function (k) { if (c[k] > 1) { dups.push([h, k, c[k]]); dupH[h.id] = 1; } }); });
+    var extra = dups.reduce(function (s, d) { return s + d[2] - 1; }, 0);
+    card(3, 'Duplicate master rooms in content', extra, extra + ' extra copies of a master room name across ' + Object.keys(dupH).length + ' hotels. Rates for the same room can end up split across the copies.', 'two identical-looking rooms on the hotel page with different prices confuse travellers and split the price comparison mapping is meant to create.', 'flag same-name rooms per hotel for content review, and merge when beds, size and occupancy match.', dups.length ? '<thead><tr><th>Hotel</th><th>Room name</th><th class="n">Copies</th></tr></thead><tbody>' + dups.slice(0, 8).map(function (d) { return '<tr><td>' + esc(d[0].name) + '</td><td>' + esc(d[1]) + '</td><td class="n">' + d[2] + '</td></tr>'; }).join('') + '</tbody>' : '');
+    // 4 consistency
+    var inc = 0; D.hotels.forEach(function (h) { var g = {}; h.rates.forEach(function (r) { var k = r.name.trim().toLowerCase(); (g[k] = g[k] || {})[r.mapped] = 1; }); Object.keys(g).forEach(function (k) { if (Object.keys(g[k]).length > 1) inc++; }); });
+    card(4, 'The same supplier name mapped to two different rooms in one hotel', inc, inc ? inc + ' supplier names map to more than one master room within the same hotel.' : 'None. Every supplier name maps to one master room within its hotel. A check worth keeping because it is cheap and catches regressions.', 'inconsistent mapping means the same offer appears under two rooms.', 'keep it as a regression check on every mapping release.', '');
+    // 5 destination search
+    var P = D.places || {}, rome = P.Rome && P.Rome.all && P.Rome.all[0];
+    if (rome && !/italy/i.test(rome.formattedAddress || '')) card(5, 'Destination search: "Rome" first returns Rome, Georgia', '1st', 'The places endpoint returned ' + (P.Rome.all.length) + ' candidates for "Rome". The first was ' + esc(rome.displayName) + ', ' + esc(rome.formattedAddress) + '. My first pull took the first result and got 11 hotels in Rome, Georgia instead of Rome, Italy. The current pull picks the candidate in the expected country.', 'a traveller or integrator who takes the first suggestion lands in the wrong country. For an API, the first result is often taken without a human looking.', 'rank place suggestions by travel demand or hotel count, not only by text match, and return the country in a structured field so integrators can filter.', '<thead><tr><th>Query</th><th>First result</th><th>Country text</th></tr></thead><tbody>' + Object.keys(P).map(function (c) { var f = P[c].all && P[c].all[0] || {}; return '<tr><td>' + esc(c) + '</td><td>' + esc(f.displayName || '') + '</td><td>' + esc(f.formattedAddress || '') + '</td></tr>'; }).join('') + '</tbody>');
+    $('checks').innerHTML = out.join('');
+  }
 
   function inputs() { return { vol: +$('vol').value || 0, cap: +$('cap').value || 0, rc: +$('rc').value || 0, bk: (+$('bk').value || 0) / 100, wc: +$('wc').value || 0, vv: +$('vv').value || 0 }; }
   function net(m, t, I) {
