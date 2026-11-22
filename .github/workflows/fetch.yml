@@ -1,4 +1,4 @@
-# v0.1.0
+# v0.1.0 (data job)
 # Pulls room names and LiteAPI's room mapping from the LiteAPI sandbox into data/live.json.
 # Needs the LITEAPI_KEY repository secret. Runs on demand, weekly, and when this file or the script changes.
 name: Fetch LiteAPI data
