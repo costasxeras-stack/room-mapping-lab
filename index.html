@@ -62,7 +62,7 @@ svg text{font:11.5px var(--body);fill:var(--muted)}
       <h2>What the data looks like</h2>
       <div class="stats" id="mess-stats"></div>
       <h3 style="font:600 15px var(--body);margin-top:16px">Coverage by city</h3>
-      <div style="overflow-x:auto"><table><thead><tr><th>City</th><th class="n">Hotels</th><th class="n">Rate names</th><th class="n">Mapped by LiteAPI</th><th class="n">Coverage</th><th class="n">Mapped to a room not in the hotel's list</th><th class="n">Names per master room</th></tr></thead><tbody id="cities"></tbody></table></div>
+      <div style="overflow-x:auto"><table><thead><tr><th>City</th><th class="n">Hotels</th><th class="n">Rate names</th><th class="n">Mapped by LiteAPI</th><th class="n">Coverage</th><th class="n">ID not in room list</th><th class="n">Names per room</th></tr></thead><tbody id="cities"></tbody></table></div>
     </section>
     <section class="card">
       <h2>One hotel, up close</h2>
@@ -219,17 +219,18 @@ svg text{font:11.5px var(--body);fill:var(--muted)}
     var C = {}; ROWS.forEach(function (x) { var c = C[x.h.city] = C[x.h.city] || { h: {}, n: 0, m: 0, g: {}, o: 0 }; c.h[x.h.id] = 1; c.n++; if (x.refRaw) { c.m++; c.g[x.h.id + x.refRaw] = 1; if (!x.ref) c.o++; } });
     $('cities').innerHTML = Object.keys(C).sort(function (a, b) { return C[b].n - C[a].n; }).map(function (k) { var c = C[k], cov = c.n ? c.m / c.n : 0; return '<tr><td>' + esc(k) + '</td><td class="n">' + Object.keys(c.h).length + '</td><td class="n">' + c.n + '</td><td class="n">' + c.m + '</td><td class="n ' + (cov >= 0.9 ? 'ok' : cov >= 0.7 ? 'mid' : 'bad') + '">' + pct(cov) + '</td><td class="n ' + (c.o ? 'mid' : '') + '">' + c.o + '</td><td class="n">' + (Object.keys(c.g).length ? (c.m / Object.keys(c.g).length).toFixed(1) : '–') + '</td></tr>'; }).join('');
     $('hotel').innerHTML = hotels.map(function (h, i) { return '<option value="' + i + '">' + esc(h.name) + ' · ' + esc(h.city) + ' · ' + h.rates.length + ' names</option>'; }).join('');
-    hotel(0);
+    $('messiest').click();
   }
   function hotel(i) {
     var h = D.hotels[i]; $('hotel').value = i;
-    var un = h.rates.filter(function (r) { return !r.mapped; });
-    $('hotel-sub').textContent = h.master.length + ' master rooms, ' + h.rates.length + ' supplier rate names, ' + un.length + ' left unmapped.';
+    var un = h.rates.filter(function (r) { return !r.mapped; }), orph = h.rates.filter(function (r) { return r.mapped && !h._m[r.mapped]; });
+    $('hotel-sub').textContent = h.master.length + ' master rooms, ' + h.rates.length + ' supplier rate names, ' + un.length + ' left unmapped' + (orph.length ? ', ' + orph.length + ' mapped to a room ID not in the list' : '') + '.';
     $('groups').innerHTML = h.master.map(function (m) { var ns = h.rates.filter(function (r) { return r.mapped === m.id; }); return '<div class="group"><b>' + esc(m.name) + '</b> <span class="note">master room ' + esc(m.id) + ' · ' + ns.length + ' supplier name' + (ns.length === 1 ? '' : 's') + '</span><div class="names">' + ns.map(function (r) { return '<span>' + esc(r.name) + '</span>'; }).join('') + '</div></div>'; }).join('') +
+      (orph.length ? '<div class="group" style="border-color:#ffe0b2"><b>Mapped to a room ID that is not in this hotel\'s room list</b><div class="names">' + orph.map(function (r) { return '<span class="un" style="background:#fff3e0;color:#8d4b00">' + esc(r.name) + ' → ' + esc(r.mapped) + '</span>'; }).join('') + '</div></div>' : '') +
       (un.length ? '<div class="group" style="border-color:#ffcdd2"><b>Left unmapped</b><div class="names">' + un.map(function (r) { return '<span class="un">' + esc(r.name) + '</span>'; }).join('') + '</div></div>' : '');
   }
   $('hotel').addEventListener('change', function () { hotel(+this.value); });
-  $('messiest').addEventListener('click', function () { var best = 0, bs = -1; D.hotels.forEach(function (h, i) { var s = h.rates.length / Math.max(1, h.master.length) + h.rates.filter(function (r) { return !r.mapped; }).length; if (s > bs) { bs = s; best = i; } }); hotel(best); });
+  $('messiest').addEventListener('click', function () { var best = 0, bs = -1; D.hotels.forEach(function (h, i) { var s = h.rates.length / Math.max(1, h.master.length) + h.rates.filter(function (r) { return !r.mapped; }).length + 0.01 * h.rates.length; if (s > bs) { bs = s; best = i; } }); hotel(best); });
 
   function evalM(m, t) { var E = ROWS.filter(function (x) { return x.ref && x.p; }), auto = E.filter(function (x) { return x.p[m].c >= t; }), ok = auto.filter(function (x) { return x.p[m].id === x.ref; }).length; return { n: E.length, all: E.filter(function (x) { return x.p[m].id === x.ref; }).length / Math.max(1, E.length), auto: auto.length / Math.max(1, E.length), prec: auto.length ? ok / auto.length : 0 }; }
   function methods() {
