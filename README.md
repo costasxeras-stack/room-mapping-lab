@@ -2,7 +2,7 @@
 
 **Supplier room names against master rooms from the LiteAPI sandbox: three matching methods tested against LiteAPI's own mapping, and the confidence threshold turned into a business decision.**
 
-**Current version:** 0.2.0
+**Current version:** 0.3.0
 
 Live: https://kostasxeras.com/room-mapping-lab/
 

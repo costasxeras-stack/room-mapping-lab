@@ -2,6 +2,18 @@
 
 All notable changes to this project. Versions follow [docs/versioning.md](docs/versioning.md).
 
+## [0.3.0] - 2026-11-23
+
+### Changed
+- New design. Tab 1 opens on a mapping board for one hotel: every supplier rate name on the left, an arrow to the yellow master room it was mapped to on the right, and unmapped names or missing room IDs shown with a dashed target. On phones each master room comes first with its supplier names under it.
+- The hotel name and city now show above the board.
+- Own look for this app: ocean teal, sun yellow, Outfit, dark board.
+
+### Added
+- Decision record: open with the mapping board.
+
+Data, matching methods and the decision model are unchanged.
+
 ## [0.2.0] - 2026-11-22
 
 ### Added

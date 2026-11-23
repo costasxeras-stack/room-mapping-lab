@@ -5,36 +5,77 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Room Mapping Lab · how much to automate, and what it is worth</title>
 <meta name="description" content="Supplier room names against master rooms from the LiteAPI sandbox: three matching methods tested against LiteAPI's own mapping, a confidence threshold, and the business trade-off between automation, errors and review cost.">
-<meta name="theme-color" content="#4527a0">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%234527a0'/%3E%3Crect x='6' y='8' width='8' height='5' rx='1.5' fill='white'/%3E%3Crect x='6' y='19' width='8' height='5' rx='1.5' fill='white'/%3E%3Crect x='19' y='13.5' width='8' height='5' rx='1.5' fill='%23ffca28'/%3E%3Cpath d='M14 10.5l5 5M14 21.5l5-5' stroke='white' stroke-width='1.6'/%3E%3C/svg%3E">
+<meta name="theme-color" content="#006d77">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23006d77'/%3E%3Crect x='6' y='8' width='8' height='5' rx='1.5' fill='white'/%3E%3Crect x='6' y='19' width='8' height='5' rx='1.5' fill='white'/%3E%3Crect x='19' y='13.5' width='8' height='5' rx='1.5' fill='%23ffca28'/%3E%3Cpath d='M14 10.5l5 5M14 21.5l5-5' stroke='white' stroke-width='1.6'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,600;7..72,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="app.css?v=1">
 <style>
-:root{--accent:#4527a0;--soft:#ede7f6}
-.intro .kicker{font:600 12.5px var(--body);letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+:root{--bg:#eef3f4;--card:#fff;--ink:#132327;--muted:#4f6267;--faint:#7f9196;--line:#d6e1e3;--accent:#006d77;--soft:#e0eff0;--sun:#ffc93c;--sun-ink:#7a5600;--warn:#c2410c;--warnsoft:#fdeee4;--display:"Outfit",system-ui,sans-serif;--body:"Outfit",system-ui,sans-serif;--r:12px}
+body{font:400 16px/1.55 var(--body)}
+h1,h2,h3{font-family:var(--display);letter-spacing:-.01em;font-weight:700}
+:focus-visible{outline:3px solid var(--sun)!important;outline-offset:2px}
+.wrap{max-width:1120px}
+header.top{background:var(--accent);border:0}
+.brand{color:#fff;font:700 19px var(--display)}
+.brand i{background:rgba(255,255,255,.16);border-radius:6px}
+.top nav a{color:#cde6e8}.top nav a:hover{color:#fff}
+.tabs{background:var(--accent);border:0}
+.tabs button{color:#b9dde0;font:600 15px var(--body);border-bottom:4px solid transparent;padding:10px 14px 12px}
+.tabs button[aria-selected="true"]{color:#fff;border-bottom-color:var(--sun)}
+.intro{padding:30px 0 10px}
+.intro .kicker{display:none}
+.intro h1{font-size:clamp(28px,4.2vw,42px);line-height:1.08;font-weight:800;max-width:24ch}
+.intro p{font-size:17px;max-width:70ch}
+.card{border-radius:var(--r);border:1px solid var(--line)}
+.card h2{font-size:22px}
+.stat{border-radius:10px;background:var(--bg);border:0}
+.stat b{font:800 28px/1.1 var(--display);color:var(--accent)}
+th{font-size:13px;letter-spacing:0;text-transform:none;color:var(--muted);border-bottom:2px solid var(--ink)}
+.btn{border-radius:8px}
+.btn.primary{background:var(--accent);border-color:var(--accent)}
 .lay{display:grid;grid-template-columns:330px minmax(0,1fr);gap:18px;align-items:start}
 .lay>*{min-width:0}.lay>.card{margin-top:0}
 .side label{display:flex;justify-content:space-between;gap:8px}
 .side label output{color:var(--accent);font-weight:700}
 input[type=range]{width:100%;accent-color:var(--accent)}
 td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
-.ok{color:#2e7d32;font-weight:600}.bad{color:#c62828;font-weight:600}.mid{color:#ef6c00;font-weight:600}
-.pill2{display:inline-block;font:600 11.5px var(--body);border-radius:999px;padding:2px 8px}
-.pill2.live{background:#e8f5e9;color:#1b5e20}.pill2.sample{background:#fff8e1;color:#8d6e00}
-.group{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-top:8px}
-.group b{font-size:14px}
-.group .names{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
-.group .names span{font-size:12.5px;background:#f3f1ec;border-radius:6px;padding:2px 7px}
-.group .names span.un{background:#ffebee;color:#b71c1c}
-svg text{font:11.5px var(--body);fill:var(--muted)}
-.verdict{border-radius:14px;padding:14px 16px;margin-top:12px;font-size:15px;border-left:5px solid var(--accent);background:var(--soft)}
-.verdict b.t{display:block;font-size:16.5px;margin-bottom:4px}
+.ok{color:#1f7a3d;font-weight:600}.bad{color:#c62828;font-weight:600}.mid{color:#c2410c;font-weight:600}
+.pill2{display:inline-block;font:600 12px var(--body);border-radius:999px;padding:2px 9px}
+.pill2.live{background:#e1f3e7;color:#1b5e20}.pill2.sample{background:#fff4d1;color:#7a5600}
+/* the mapping board */
+.hotel-card{background:var(--ink);color:#fff;border:0;padding:24px}
+.hotel-card h2{font-size:24px;color:#fff}
+.hotel-card .sub{color:#a9c1c5}
+.hotel-card select{background:#1f363b;color:#fff;border-color:#35535a}
+.hotel-card .btn{background:transparent;color:#fff;border-color:#35535a}
+.hotel-card .btn:hover{border-color:var(--sun)}
+.board-key{display:flex;justify-content:space-between;font-size:13px;color:#8fb0b5;margin-top:16px;padding:0 2px}
+.group{display:grid;grid-template-columns:minmax(0,1fr) 46px 230px;align-items:center;gap:0;border:0;border-radius:0;padding:12px 0;margin:0;border-top:1px solid #2a4146}
+.group .names{display:flex;flex-wrap:wrap;gap:5px;margin:0;justify-content:flex-end}
+.group .names span{font-size:13px;background:#22393e;color:#dbe9eb;border-radius:4px;padding:3px 8px}
+.group .names span.un{background:#4a2420;color:#ffc2b3}
+.group .arrow{height:2px;background:linear-gradient(90deg,#3f6168,var(--sun));position:relative;margin:0 6px}
+.group .arrow::after{content:"";position:absolute;right:-2px;top:-4px;border:5px solid transparent;border-left:7px solid var(--sun)}
+.group .room{background:var(--sun);color:#2a1d00;border-radius:8px;padding:9px 12px;position:relative}
+.group .room b{display:block;font-size:14.5px;line-height:1.25}
+.group .room small{display:block;font-size:12px;color:#6b4b00}
+.group.unmapped .arrow{background:repeating-linear-gradient(90deg,#c2410c 0 6px,transparent 6px 10px)}
+.group.unmapped .arrow::after{border-left-color:#c2410c}
+.group.unmapped .room{background:transparent;border:2px dashed #c2410c;color:#ffc2b3}
+.group.unmapped .room small{color:#ffb39f}
+.group.orphan .room{background:transparent;border:2px dashed var(--sun);color:#ffe7a3}
+.group.orphan .room small{color:#e6c46b}
+svg text{font:12px var(--body);fill:var(--muted)}
+.verdict{border-radius:10px;padding:14px 16px;margin-top:12px;font-size:15px;border-left:5px solid var(--sun);background:#fff8e3}
+.verdict b.t{display:block;font-size:17px;margin-bottom:4px}
 .mm{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-.play h3{font:600 16px var(--body);margin-top:16px}
+.play h3{font:700 17px var(--display);margin-top:16px}
 .play ol,.play ul{padding-left:20px;display:grid;gap:6px;font-size:15px}
-.ex td{font-size:13.5px}
+.ex td{font-size:14px}
+footer{background:none;border-top:2px solid var(--ink)}
 @media (max-width:900px){.lay,.mm{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:700px){.group{grid-template-columns:minmax(0,1fr);gap:8px}.group .names{justify-content:flex-start;order:2}.group .room{order:1}.group .arrow{display:none}.board-key{display:none}.hotel-card{padding:18px 16px}}
 </style>
 </head>
 <body>
@@ -51,26 +92,27 @@ svg text{font:11.5px var(--body);fill:var(--muted)}
 </div></div>
 <main class="wrap">
   <section class="intro">
-    <span class="kicker">Hotel content · room mapping · decision lab</span>
-    <h1>How much room mapping to automate, and what each choice is worth.</h1>
+        <h1>How much room mapping to automate, and what each choice is worth.</h1>
     <p>Every supplier names the same room differently. Mapping them to one master room is what makes rates comparable, so travellers see one room with the best price instead of five confusing ones. This lab takes supplier room names and master rooms from the LiteAPI sandbox, tests three matching methods against LiteAPI's own mapping, and turns the confidence threshold into a business decision.</p>
     <p id="src" style="margin-top:8px"></p>
   </section>
 
   <!-- 1 -->
   <div data-panel="mess">
+    <section class="card hotel-card">
+      <h2>One hotel's rooms, as suppliers name them</h2>
+      <p class="sub" id="hotel-sub"></p>
+      <div class="row"><select id="hotel" style="max-width:420px" aria-label="Hotel"></select><button class="btn small" type="button" id="messiest">Show the messiest hotel</button><button class="btn small" type="button" id="orphan-btn">Show a hotel with missing room IDs</button></div>
+      <div class="board-key" aria-hidden="true"><span>Supplier rate names</span><span>Master room they were mapped to</span></div>
+      <div id="groups"></div>
+    </section>
     <section class="card">
       <h2>What the data looks like</h2>
       <div class="stats" id="mess-stats"></div>
       <h3 style="font:600 15px var(--body);margin-top:16px">Coverage by city</h3>
       <div style="overflow-x:auto"><table><thead><tr><th>City</th><th class="n">Hotels</th><th class="n">Rate names</th><th class="n">Mapped by LiteAPI</th><th class="n">Coverage</th><th class="n">ID not in room list</th><th class="n">Names per room</th></tr></thead><tbody id="cities"></tbody></table></div>
     </section>
-    <section class="card">
-      <h2>One hotel, up close</h2>
-      <div class="row" style="margin-top:0"><select id="hotel" style="max-width:420px" aria-label="Hotel"></select><button class="btn small" type="button" id="messiest">Show the messiest hotel</button><button class="btn small" type="button" id="orphan-btn">Show a hotel with missing room IDs</button></div>
-      <p class="sub" id="hotel-sub"></p>
-      <div id="groups"></div>
-    </section>
+
   </div>
 
   <!-- 2 -->
@@ -175,7 +217,7 @@ svg text{font:11.5px var(--body);fill:var(--muted)}
     </ul>
   </section>
 </main>
-<footer><div class="wrap"><span>Room Mapping Lab v0.2.0 by <a href="https://kostasxeras.com/">Konstantinos Xeras</a>. <a href="https://github.com/costasxeras-stack/room-mapping-lab">Code and decisions on GitHub</a>.</span></div></footer>
+<footer><div class="wrap"><span>Room Mapping Lab v0.3.0 by <a href="https://kostasxeras.com/">Konstantinos Xeras</a>. <a href="https://github.com/costasxeras-stack/room-mapping-lab">Code and decisions on GitHub</a>.</span></div></footer>
 <script>
 (function () {
   'use strict';
@@ -235,10 +277,11 @@ svg text{font:11.5px var(--body);fill:var(--muted)}
   function hotel(i) {
     var h = D.hotels[i]; $('hotel').value = i;
     var un = h.rates.filter(function (r) { return !r.mapped; }), orph = h.rates.filter(function (r) { return r.mapped && !h._m[r.mapped]; });
-    $('hotel-sub').textContent = h.master.length + ' master rooms, ' + h.rates.length + ' supplier rate names, ' + un.length + ' left unmapped' + (orph.length ? ', ' + orph.length + ' mapped to a room ID not in the list' : '') + '.';
-    $('groups').innerHTML = h.master.map(function (m) { var ns = h.rates.filter(function (r) { return r.mapped === m.id; }); return '<div class="group"><b>' + esc(m.name) + '</b> <span class="note">master room ' + esc(m.id) + ' · ' + ns.length + ' supplier name' + (ns.length === 1 ? '' : 's') + '</span><div class="names">' + ns.map(function (r) { return '<span>' + esc(r.name) + '</span>'; }).join('') + '</div></div>'; }).join('') +
-      (orph.length ? '<div class="group" style="border-color:#ffe0b2"><b>Mapped to a room ID that is not in this hotel\'s room list</b><div class="names">' + orph.map(function (r) { return '<span class="un" style="background:#fff3e0;color:#8d4b00">' + esc(r.name) + ' → ' + esc(r.mapped) + '</span>'; }).join('') + '</div></div>' : '') +
-      (un.length ? '<div class="group" style="border-color:#ffcdd2"><b>Left unmapped</b><div class="names">' + un.map(function (r) { return '<span class="un">' + esc(r.name) + '</span>'; }).join('') + '</div></div>' : '');
+    $('hotel-sub').textContent = h.name + ', ' + h.city + '. ' + h.master.length + ' master rooms, ' + h.rates.length + ' supplier rate names, ' + un.length + ' left unmapped' + (orph.length ? ', ' + orph.length + ' mapped to a room ID not in the list' : '') + '.';
+    var grp = function (cls, names, title, sub) { return '<div class="group' + cls + '"><div class="names">' + names + '</div><span class="arrow" aria-hidden="true"></span><div class="room"><b>' + title + '</b><small>' + sub + '</small></div></div>'; };
+    $('groups').innerHTML = h.master.map(function (m) { var ns = h.rates.filter(function (r) { return r.mapped === m.id; }); return grp('', ns.length ? ns.map(function (r) { return '<span>' + esc(r.name) + '</span>'; }).join('') : '<span style="opacity:.6">no supplier names</span>', esc(m.name), 'master room ' + esc(m.id) + ', ' + ns.length + ' name' + (ns.length === 1 ? '' : 's')); }).join('') +
+      (orph.length ? grp(' orphan', orph.map(function (r) { return '<span>' + esc(r.name) + '</span>'; }).join(''), 'Room ID not in the room list', orph.map(function (r) { return esc(r.mapped); }).filter(function (v, i, a) { return a.indexOf(v) === i; }).join(', ')) : '') +
+      (un.length ? grp(' unmapped', un.map(function (r) { return '<span class="un">' + esc(r.name) + '</span>'; }).join(''), 'No master room', 'left unmapped, ' + un.length + ' name' + (un.length === 1 ? '' : 's')) : '');
   }
   $('hotel').addEventListener('change', function () { hotel(+this.value); });
   $('orphan-btn').addEventListener('click', function () { var i = -1; D.hotels.forEach(function (h, k) { if (i < 0 && /sofitel/i.test(h.name) && h.rates.some(function (r) { return r.mapped && !h._m[r.mapped]; })) i = k; }); if (i < 0) D.hotels.forEach(function (h, k) { if (i < 0 && h.rates.some(function (r) { return r.mapped && !h._m[r.mapped]; })) i = k; }); if (i >= 0) hotel(i); });
